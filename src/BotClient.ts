@@ -42,9 +42,9 @@ export default class BotClient extends EventEmitter {
           clearTimeout(this.serverMessageTimeout)
         }
         this.serverMessageTimeout = setTimeout(() => {
-          console.log("[BOT] ❌ No message from server in 15 seconds")
+          console.log("[BOT] ❌ No message from server in 45 seconds")
           this.client.disconnect()
-        }, 15000)
+        }, 45000)
 
         if (ccc === extraIdentifiers.tribehouseInvitation) {
           const name = packet.readUTF()
