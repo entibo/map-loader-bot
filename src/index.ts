@@ -1,4 +1,5 @@
 import "dotenv/config"
+const PORT = parseInt(process.env.PORT as string)
 
 import { WebSocketServer, WebSocket } from "ws"
 import BotManager from "./BotManager"
@@ -8,7 +9,7 @@ interface UserData {
 }
 const userDataMap = new WeakMap<WebSocket, UserData>()
 
-const wss = new WebSocketServer({ port: 9000 }, () => {
+const wss = new WebSocketServer({ port: PORT }, () => {
   console.log("[WSS] ✔️  Started")
 })
 

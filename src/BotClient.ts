@@ -194,7 +194,7 @@ export default class BotClient extends EventEmitter {
             extraIdentifiers.acceptTribehouseInvitation,
             new tfmjs.ByteArray().writeUTF(playerName),
           ),
-        (room) => room.isTribeHouse && room.name.includes(tribeName!),
+        (room) => room.isTribeHouse && room.name.includes(tribeName),
       )
     } catch (e: any) {
       this.client.sendWhisper(

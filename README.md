@@ -1,0 +1,2 @@
+Transformice bot that goes to a user's tribehouse to load a map.  
+Uses [Transformice.js](https://github.com/cheeseformice/transformice.js), check it out if you're interested in making/running a bot.  
