@@ -102,6 +102,10 @@ export default class BotClient extends EventEmitter {
       .run()
       .then(() => {
         console.log("[BOT] 👉 Connecting...")
+        this.client.waitFor("ready", 15000).catch(() => {
+          console.log("[BOT] ❌ Couldn't connect to server")
+          this.emit("disconnect")
+        })
       })
       .catch((error) => {
         console.log("[BOT] ❌ Failed to start:", error.message)
