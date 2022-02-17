@@ -2,9 +2,10 @@
   "name": "map-loader-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "js/index.js",
   "scripts": {
-    "start": "npx ts-node src/index.ts"
+    "build": "tsc",
+    "start": "node js/index.js"
   },
   "keywords": [],
   "author": "",
