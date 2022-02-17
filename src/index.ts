@@ -50,6 +50,10 @@ wss
       })
       .on("message", (data) => {
         const str = data.toString()
+        if(!str.length) {
+          send(ws, "")
+          return
+        }
         try {
           const json = JSON.parse(str)
           handleMessage(ws, ip, json)
