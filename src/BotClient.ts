@@ -4,10 +4,7 @@ const { BOT_NAME, BOT_PASS } = process.env as {
 }
 
 import * as tfmjs from "@cheeseformice/transformice.js"
-import {
-  Client,
-  enums, Room
-} from "@cheeseformice/transformice.js"
+import { Client, enums, Room } from "@cheeseformice/transformice.js"
 import { EventEmitter } from "ws"
 import { MapLoadingRequest } from "."
 
@@ -23,7 +20,6 @@ export default class BotClient extends EventEmitter {
   client: Client
   breakRoom = "@vanilla entibot"
   lastRoomChange = Date.now()
-  serverMessageTimeout: NodeJS.Timeout | undefined
   /** Maps player name to tribe name */
   tribehouseInvitations: Map<string, string> = new Map()
 
@@ -38,14 +34,6 @@ export default class BotClient extends EventEmitter {
       .on("rawPacket", (conn, ccc, packet) => {
         // console.log(ccc, IdentifierSplit(ccc))
 
-        if (this.serverMessageTimeout) {
-          clearTimeout(this.serverMessageTimeout)
-        }
-        this.serverMessageTimeout = setTimeout(() => {
-          console.log("[BOT] ❌ No message from server in 45 seconds")
-          this.client.disconnect()
-        }, 45000)
-
         if (ccc === extraIdentifiers.tribehouseInvitation) {
           const name = packet.readUTF()
           const tribeName = packet.readUTF()
@@ -59,9 +47,14 @@ export default class BotClient extends EventEmitter {
         }
       })
       .on("disconnect", () => {
+        console.log("[BOT] ❌ Disconnected")
         this.emit("disconnect")
         this.emit("available", false)
-        console.log("[BOT] ❌ Disconnected")
+      })
+      .on("connectionError", (e) => {
+        console.log("[BOT] ❌ Disconnected (connection error):", e.message)
+        this.emit("disconnect")
+        this.emit("available", false)
       })
       .on("restart", () => {
         console.log("[BOT] 👉 Restarting...")
