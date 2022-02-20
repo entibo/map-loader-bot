@@ -105,7 +105,7 @@ function handleMessage(ws: WebSocket, ip: string, data: any) {
           send(
             ws,
             JSON.stringify({
-              hasTrighouseAccess: true,
+              hasTribehouseAccess: true,
               isModuleLoaded: true,
             }),
           )
