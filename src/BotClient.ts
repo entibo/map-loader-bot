@@ -8,6 +8,10 @@ import { Client, enums, Room } from "@cheeseformice/transformice.js"
 import { EventEmitter } from "ws"
 import { MapLoadingRequest } from "."
 
+function getFullRoomName(name: string) {
+  return `*#bolodefchoco miceditor ${name}`
+}
+
 const extraIdentifiers = {
   tribehouseInvitation: tfmjs.Identifier(16, 2),
   acceptTribehouseInvitation: tfmjs.Identifier(16, 2),
@@ -18,7 +22,7 @@ const extraIdentifiers = {
 const roomSwitchCooldown = 1500
 export default class BotClient extends EventEmitter {
   client: Client
-  breakRoom = "@vanilla entibot"
+  breakRoom = getFullRoomName("entibot")
   lastRoomChange = Date.now()
   /** Maps player name to tribe name */
   tribehouseInvitations: Map<string, string> = new Map()
@@ -152,35 +156,60 @@ export default class BotClient extends EventEmitter {
   }
 
   protected _processRequest(request: MapLoadingRequest): Promise<void> {
-    const playerName = request.name
-    const tribeName = this.tribehouseInvitations.get(playerName)
-    if (!tribeName) {
-      request.promise.reject({ hasTribehouseAccess: false })
-      return Promise.resolve()
-    }
-
-    return this.joinUserTribe(playerName, tribeName)
-      .then(() => {
-        return this.loadMapUsingPopup(request.xml)
-          .then(() => {
-            request.promise.resolve("ok")
-          })
-          .catch((e) => {
-            console.log(
-              "[BOT] Couldn't load map in tribehouse:",
-              playerName,
-              e.message,
-            )
-            request.promise.reject({
-              hasTribehouseAccess: true,
-              isModuleLoaded: false,
-            })
-          })
-      })
-      .catch((e) => {
-        console.log("[BOT] Couldn't join tribe house:", playerName, e.message)
+    if (request.mode === "tribehouse") {
+      const playerName = request.name
+      const tribeName = this.tribehouseInvitations.get(playerName)
+      if (!tribeName) {
         request.promise.reject({ hasTribehouseAccess: false })
-      })
+        return Promise.resolve()
+      }
+      return this.joinUserTribe(playerName, tribeName)
+        .then(() => {
+          return this.loadMapUsingPopup(request.xml)
+            .then(() => {
+              request.promise.resolve("ok")
+            })
+            .catch((e) => {
+              console.log(
+                "[BOT] Couldn't load map in tribehouse:",
+                playerName,
+                e.message,
+              )
+              request.promise.reject({
+                hasTribehouseAccess: true,
+                isModuleLoaded: false,
+              })
+            })
+        })
+        .catch((e) => {
+          console.log("[BOT] Couldn't join tribe house:", playerName, e.message)
+          request.promise.reject({ hasTribehouseAccess: false })
+        })
+    } else {
+      const roomName = getFullRoomName(request.name)
+      return this.switchRoom(
+        () => this.client.enterRoom(roomName),
+        (room) => room.name === roomName,
+      )
+        .then(() => {
+          return this.loadMapUsingPopup(request.xml)
+            .then(() => {
+              request.promise.resolve("ok")
+            })
+            .catch((e) => {
+              console.log(
+                "[BOT] Couldn't load map in module room:",
+                roomName,
+                e.message,
+              )
+              request.promise.reject({})
+            })
+        })
+        .catch((e) => {
+          console.log("[BOT] Couldn't join module room:", roomName, e.message)
+          request.promise.reject({})
+        })
+    }
   }
 
   async joinUserTribe(playerName: string, tribeName: string) {

@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from "ws"
 import BotManager from "./BotManager"
 
 interface UserData {
+  mode: "tribehouse" | "room"
   name: string
 }
 const userDataMap = new WeakMap<WebSocket, UserData>()
@@ -50,7 +51,7 @@ wss
       })
       .on("message", (data) => {
         const str = data.toString()
-        if(!str.length) {
+        if (!str.length) {
           send(ws, "")
           return
         }
@@ -70,7 +71,13 @@ function handleMessage(ws: WebSocket, ip: string, data: any) {
     const userData = userDataMap.get(ws)
     if (userData && userData.name === name) return
     console.log("[WSS] Client sent name:", ip, name)
-    userDataMap.set(ws, { name: name })
+    userDataMap.set(ws, { mode: "tribehouse", name })
+  } else if ("room" in data && typeof data["room"] === "string") {
+    const name: string = data["room"]
+    const userData = userDataMap.get(ws)
+    if (userData && userData.name === name) return
+    console.log("[WSS] Client sent room:", ip, name)
+    userDataMap.set(ws, { mode: "room", name })
   } else if ("xml" in data && typeof data["xml"] === "string") {
     const xml: string = data["xml"]
     console.log(
@@ -88,12 +95,26 @@ function handleMessage(ws: WebSocket, ip: string, data: any) {
       )
       return
     }
-    enqueueRequest({ ws, name: userData.name, xml: xml })
+    enqueueRequest({
+      ws,
+      xml: xml,
+      ...userData,
+    })
       .then(() => {
-        send(ws, "ok")
+        if (userData.mode === "tribehouse") {
+          send(
+            ws,
+            JSON.stringify({
+              hasTrighouseAccess: true,
+              isModuleLoaded: true,
+            }),
+          )
+        } else {
+          send(ws, "ok")
+        }
       })
       .catch((o) => {
-        console.log("[WSS] Request failed, sending diagnostic:", ip)
+        console.log("[WSS] Request failed:", ip)
         if (o) {
           send(ws, JSON.stringify(o))
         }
@@ -103,9 +124,8 @@ function handleMessage(ws: WebSocket, ip: string, data: any) {
   }
 }
 
-export interface MapLoadingRequest {
+export interface MapLoadingRequest extends UserData {
   ws: WebSocket
-  name: string
   xml: string
   promise: {
     resolve: (r: any) => void
