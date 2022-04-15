@@ -9,6 +9,9 @@ import { EventEmitter } from "ws"
 import { MapLoadingRequest } from "."
 
 function getFullRoomName(name: string) {
+  // Allowed in private rooms (funcorp)
+  if(name.startsWith("@")) return name
+  // Otherwise restrict to this module's rooms
   return `*#bolodefchoco miceditor ${name}`
 }
 
