@@ -56,12 +56,12 @@ export default class BotClient extends EventEmitter {
       .on("disconnect", () => {
         console.log("[BOT] ❌ Disconnected")
         this.emit("disconnect")
-        this.emit("available", false)
+        this.available = false
       })
       .on("connectionError", (e) => {
         console.log("[BOT] ❌ Disconnected (connection error):", e.message)
         this.emit("disconnect")
-        this.emit("available", false)
+        this.available = false
       })
       .on("restart", () => {
         console.log("[BOT] 👉 Restarting...")
@@ -70,7 +70,7 @@ export default class BotClient extends EventEmitter {
         console.log("[BOT] ✔️  Ready")
         this.tribehouseInvitations.clear()
         this.emit("ready")
-        this.emit("available", true)
+        this.available = true
       })
       .on("roomChange", ({ name }) => {
         console.log(`[BOT] Entered room '${name}'`)
@@ -87,17 +87,41 @@ export default class BotClient extends EventEmitter {
       .on("popup", () => {
         console.log("[BOT] Popup received")
       })
-      .on("whisper", (msg) => {
+      .on("whisper", async (msg) => {
         if (msg.author.name === this.client.name) return
         console.log(`[BOT] Whisper from ${msg.author.name}: '${msg.content}'`)
-        // if (msg.content.toLowerCase().includes("disconnect")) {
-        //   this.client.disconnect()
-        // }
-        for (const [name, friend] of this.client.friends.entries()) {
-          if (!friend.isConnected) continue
-          console.log("Friend:", name, friend.roomName)
+        if (!msg.content.startsWith("!join")) return
+        const friend = this.client.friends.get(msg.author.name)
+        if (!friend || !friend.roomName) return
+        if (!this.available) {
+          msg.reply("I am currently unavailable. Please try again later.")
+          return
         }
+        this.available = false
+        try {
+          const time =
+            parseInt(msg.content.slice("!join".length + 1).trim()) || 5000
+          console.log(`[BOT] Joining ${friend.roomName} for ${time}ms...`)
+          await this.switchRoom(
+            () => this.client.enterRoom(friend.roomName),
+            (room) => room.name === friend.roomName,
+          )
+          await this.sleep(time)
+          await this.goToBreakRoom()
+        } catch (e) {
+          console.log(e)
+        }
+        this.available = true
       })
+  }
+
+  private _available: boolean = false
+  get available() {
+    return this._available
+  }
+  set available(value: boolean) {
+    this._available = value
+    this.emit('available', value)
   }
 
   start() {
@@ -149,7 +173,7 @@ export default class BotClient extends EventEmitter {
   ): Promise<void> {
     console.log("[BOT] Processing request...")
     // console.log("[BOT] Current room:", this.client.room.name)
-    this.emit("available", false)
+    this.available = false
     await this._processRequest(request)
     const nextRequest = getNextRequest()
     if (nextRequest) {
@@ -159,7 +183,7 @@ export default class BotClient extends EventEmitter {
       console.log("[BOT] ❌ Couldn't go back to break room...")
       this.client.disconnect()
     })
-    this.emit("available", true)
+    this.available = true
   }
 
   protected _processRequest(request: MapLoadingRequest): Promise<void> {
