@@ -10,7 +10,7 @@ import { MapLoadingRequest } from "."
 
 function getFullRoomName(name: string) {
   // Allowed in private rooms (funcorp)
-  if(name.startsWith("@")) return name
+  if (name.startsWith("@")) return name
   // Otherwise restrict to this module's rooms
   return `*#bolodefchoco miceditor ${name}`
 }
@@ -93,6 +93,10 @@ export default class BotClient extends EventEmitter {
         // if (msg.content.toLowerCase().includes("disconnect")) {
         //   this.client.disconnect()
         // }
+        for (const [name, friend] of this.client.friends.entries()) {
+          if (!friend.isConnected) continue
+          console.log("Friend:", name, friend.roomName)
+        }
       })
   }
 
