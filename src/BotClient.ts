@@ -8,6 +8,18 @@ import { Client, enums, Room } from "@cheeseformice/transformice.js"
 import { EventEmitter } from "ws"
 import { MapLoadingRequest } from "."
 
+// Temporary fix
+//@ts-ignore
+const _handlePacket = Client.prototype.handlePacket
+//@ts-ignore
+Client.prototype.handlePacket = function(conn: Connection, packet: ByteArray) {
+  const ccc = packet.readUnsignedShort();
+  packet.readPosition = 0
+  if(ccc === 36865) return
+  //@ts-ignore
+  return _handlePacket.apply(this, arguments)
+}
+
 function getFullRoomName(name: string) {
   // Allowed in private rooms (funcorp)
   if (name.startsWith("@")) return name
